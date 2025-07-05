@@ -1,4 +1,6 @@
-﻿using DesignPatterns.Models;
+﻿using DesignPatterns.BuilderModels;
+using DesignPatterns.Factories;
+using DesignPatterns.Models;
 using DesignPatterns.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -16,7 +18,7 @@ namespace DesignPatterns.Controllers
 
         private readonly IVehicleRepository _vehicleRepository;
 
-        public HomeController(IVehicleRepository vehicleRepository,ILogger<HomeController> logger)
+        public HomeController(IVehicleRepository vehicleRepository, ILogger<HomeController> logger)
         {
             _vehicleRepository = vehicleRepository;
             _logger = logger;
@@ -35,14 +37,22 @@ namespace DesignPatterns.Controllers
         [HttpGet]
         public IActionResult AddMustang()
         {
-            _vehicleRepository.AddVehicle(new Car("red","Ford","Mustang"));
+            var builder = new CarModelBuilder();
+            var newCar = builder
+                .SetColor("red")
+                .SetBrand("Ford")
+                .SetModel("Mustang")
+                .SetYear(2023)
+                .Build();
+            _vehicleRepository.AddVehicle(newCar);
             return Redirect("/");
         }
 
         [HttpGet]
         public IActionResult AddExplorer()
         {
-            _vehicleRepository.AddVehicle(new Car("red", "Ford", "Explorer"));
+            var carFactory = chooseFactory("Explorer");
+            _vehicleRepository.AddVehicle(carFactory.Create());
             return Redirect("/");
         }
 
@@ -55,12 +65,12 @@ namespace DesignPatterns.Controllers
                 vehicle.StartEngine();
                 return Redirect("/");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ViewBag.ErrorMessage = ex.Message;
                 return Redirect($"/?error={ex.Message}");
             }
-          
+
         }
 
         [HttpGet]
@@ -89,13 +99,13 @@ namespace DesignPatterns.Controllers
                 vehicle.StopEngine();
                 return Redirect("/");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ViewBag.ErrorMessage = ex.Message;
                 return Redirect($"/?error={ex.Message}");
             }
-           
-           
+
+
         }
 
 
@@ -108,6 +118,18 @@ namespace DesignPatterns.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+
+        private CarFactory chooseFactory(string vehicle)
+        {
+            return vehicle switch
+            {
+                "Mustang" => new FordCreateFactory(),
+                "Explorer" => new FordCreateFactory(),
+                "Escape" => new FordCreateFactory(),
+                _ => throw new NotImplementedException(),
+            };
         }
     }
 }
